@@ -1,0 +1,25 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+
+# Test binaries and coverage output
+*.test
+*.out
+
+# Go workspace file
+go.work
+
+# Editor and IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# macOS / local cache files
+.DS_Store
+.gocache/

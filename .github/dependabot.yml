@@ -1,0 +1,34 @@
+version: 2
+updates:
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    groups:
+      kubernetes:
+        patterns:
+          - "k8s.io/*"
+          - "sigs.k8s.io/*"
+      grpc:
+        patterns:
+          - "google.golang.org/grpc"
+          - "google.golang.org/protobuf"
+      templating:
+        patterns:
+          - "github.com/Masterminds/*"
+          - "github.com/mitchellh/*"
+    labels:
+      - "dependencies"
+      - "go"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"

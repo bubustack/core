@@ -1,0 +1,97 @@
+name: Release Please
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release-please-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify release commit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: 1.25.x
+          check-latest: true
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Run linters
+        run: make lint
+
+      - name: Run unit tests
+        run: go test ./...
+
+      - name: Run race detector
+        run: go test -race ./...
+
+      - name: Verify module state
+        run: |
+          go mod verify
+          go mod tidy -diff
+
+  release-please:
+    needs: verify
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - name: Release Please
+        id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          config-file: .github/release-please-config.json
+          manifest-file: .github/.release-please-manifest.json
+
+      - name: Checkout
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/setup-go@v6
+        with:
+          go-version: 1.25.x
+          check-latest: true
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Warm Go module caches
+        if: ${{ steps.release.outputs.release_created }}
+        run: |
+          set -euo pipefail
+          MOD=github.com/${{ github.repository }}
+          VER=${{ steps.release.outputs.tag_name }}
+          curl -sSfL "https://proxy.golang.org/${MOD}/@v/${VER}.info" || true
+          curl -sSfL "https://sum.golang.org/lookup/${MOD}@${VER}" || true
+          curl -sSfL "https://pkg.go.dev/${MOD}@${VER}" > /dev/null || true
+
+      - name: Create release summary
+        if: ${{ steps.release.outputs.release_created }}
+        run: |
+          {
+            echo "## Release ${{ steps.release.outputs.tag_name }}"
+            echo
+            echo "- GitHub release: https://github.com/${{ github.repository }}/releases/tag/${{ steps.release.outputs.tag_name }}"
+            echo "- pkg.go.dev: https://pkg.go.dev/github.com/bubustack/core@${{ steps.release.outputs.tag_name }}"
+            echo
+            echo '```bash'
+            echo "go get github.com/bubustack/core@${{ steps.release.outputs.tag_name }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
