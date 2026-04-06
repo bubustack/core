@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.2](https://github.com/bubustack/core/compare/v0.1.1...v0.1.2) (2026-04-06)
+
+
+### Bug Fixes
+
+* go.sum file inconsistency ([1aca7f2](https://github.com/bubustack/core/commit/1aca7f279c4a432a7ae951589e62949ec9902cbb))
+
+
+### Miscellaneous
+
+* use tractatus latest version ([1e3dc6d](https://github.com/bubustack/core/commit/1e3dc6db2e356fa100ca7a1858519f07a503e7f3))
+
 ## [0.1.1](https://github.com/bubustack/core/compare/v0.1.0...v0.1.1) (2026-04-06)
 
 
