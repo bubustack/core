@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/bubustack/core/compare/v0.1.0...v0.1.1) (2026-04-06)
+
+
+### Features
+
+* add startup-capabilities protocol, non-blocking call timeouts, and indexed-step chain validation ([0f5ace2](https://github.com/bubustack/core/commit/0f5ace20a355767846d1b9228fb74c622c07ec35))
+
 ## 0.1.0 (2026-03-26)
 
 
