@@ -156,19 +156,21 @@ func checkChainUsage(node *parse.ChainNode, scope ExpressionScope, errs *[]strin
 	if node == nil {
 		return
 	}
-	var ident []string
-	switch base := node.Node.(type) {
-	case *parse.FieldNode:
-		ident = append([]string{}, base.Ident...)
+	switch node.Node.(type) {
 	case *parse.VariableNode:
 		// skip variables
 		return
-	case *parse.DotNode:
-		ident = []string{}
 	}
-	if len(node.Field) > 0 {
-		ident = append(ident, node.Field...)
+
+	root, _, ok := rootNameFromNode(node.Node)
+	if !ok {
+		return
 	}
+	var ident []string
+	if root != "" {
+		ident = append(ident, root)
+	}
+	ident = append(ident, node.Field...)
 	if len(ident) == 0 {
 		return
 	}
@@ -207,11 +209,11 @@ func checkCommandRootUsage(cmd *parse.CommandNode, scope ExpressionScope, errs *
 	}
 
 	switch ident.Ident {
-	case "index", "get":
+	case fnIndex, fnGet:
 		if root, ok := rootFromAccessorArgs(cmd.Args[1:]); ok {
 			checkRootUsage([]string{root}, scope, errs)
 		}
-	case "dig":
+	case fnDig:
 		if root, ok := rootFromDigArgs(cmd.Args[1:]); ok {
 			checkRootUsage([]string{root}, scope, errs)
 		}
@@ -272,9 +274,47 @@ func rootNameFromNode(node parse.Node) (root string, isDot bool, ok bool) {
 				return "", true, true
 			}
 			return typed.Field[0], false, true
+		case *parse.PipeNode:
+			return rootNameFromPipe(base)
+		case *parse.CommandNode:
+			return rootNameFromCommand(base)
 		}
+	case *parse.PipeNode:
+		return rootNameFromPipe(typed)
+	case *parse.CommandNode:
+		return rootNameFromCommand(typed)
 	case *parse.DotNode:
 		return "", true, true
 	}
 	return "", false, false
+}
+
+func rootNameFromPipe(pipe *parse.PipeNode) (root string, isDot bool, ok bool) {
+	if pipe == nil || len(pipe.Cmds) == 0 {
+		return "", false, false
+	}
+	return rootNameFromCommand(pipe.Cmds[0])
+}
+
+func rootNameFromCommand(cmd *parse.CommandNode) (root string, isDot bool, ok bool) {
+	if cmd == nil || len(cmd.Args) == 0 {
+		return "", false, false
+	}
+
+	if ident, ok := cmd.Args[0].(*parse.IdentifierNode); ok {
+		switch ident.Ident {
+		case fnIndex, fnGet:
+			if root, ok := rootFromAccessorArgs(cmd.Args[1:]); ok {
+				return root, false, true
+			}
+			return "", false, false
+		case fnDig:
+			if root, ok := rootFromDigArgs(cmd.Args[1:]); ok {
+				return root, false, true
+			}
+			return "", false, false
+		}
+	}
+
+	return rootNameFromNode(cmd.Args[0])
 }

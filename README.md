@@ -75,14 +75,12 @@ import (
 
 - Go 1.25.1 or newer (matching `go.mod`)
 - `make`
-- A sibling checkout of `../tractatus` while the local replace remains in `go.mod`
 
 ### Setup
 
 1. Clone your fork of `core`.
-2. Ensure `tractatus` is checked out as a sibling directory next to `core`.
-3. Run `make help` to inspect available targets.
-4. Run `make test` before opening a change.
+2. Run `make help` to inspect available targets.
+3. Run `make test` before opening a change.
 
 ### Common commands
 

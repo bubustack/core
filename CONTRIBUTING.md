@@ -44,15 +44,13 @@ be explicit, well-tested, and easy to review.
 
 - Go 1.25.1 or newer (matching `go.mod`)
 - `make` and bash
-- A sibling checkout of `../tractatus` while the local replace remains in `go.mod`
 
 ### Setup
 
 1. Fork the repository and clone your fork.
-2. Ensure `tractatus` is checked out as a sibling directory next to `core`.
-3. `cd core`
-4. `make help` to inspect the available targets.
-5. `make test` before opening your first PR.
+2. `cd core`
+3. `make help` to inspect the available targets.
+4. `make test` before opening your first PR.
 
 ### Running tests
 

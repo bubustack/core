@@ -86,7 +86,7 @@ func walkStepRefsCmd(cmd *parse.CommandNode, seen map[string]struct{}) {
 	}
 	// Check for `index .steps "name"` pattern
 	if len(cmd.Args) >= 3 {
-		if ident, ok := cmd.Args[0].(*parse.IdentifierNode); ok && ident.Ident == "index" {
+		if ident, ok := cmd.Args[0].(*parse.IdentifierNode); ok && ident.Ident == fnIndex {
 			if field, ok := cmd.Args[1].(*parse.FieldNode); ok {
 				if len(field.Ident) >= 1 && field.Ident[0] == RootSteps {
 					if str, ok := cmd.Args[2].(*parse.StringNode); ok {

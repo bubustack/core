@@ -37,3 +37,20 @@ func TestValidateJSONTemplatesRejectsOversizedInput(t *testing.T) {
 		t.Fatalf("expected oversize validation error, got %v", err)
 	}
 }
+
+func TestValidateTemplateStringAllowsIndexedStepsChainWhenStepsAllowed(t *testing.T) {
+	scope := NewExpressionScope("story-output", false, false, false, RootInputs, RootSteps)
+	err := ValidateTemplateString(`{{ (index .steps "fetch-feed").output.body }}`, scope)
+	if err != nil {
+		t.Fatalf("expected indexed step chain to validate when steps are allowed, got %v", err)
+	}
+}
+
+func TestValidateJSONTemplatesAllowsIndexedStepsChainWhenStepsAllowed(t *testing.T) {
+	scope := NewExpressionScope("batch-runtime", false, false, false, RootInputs, RootSteps)
+	raw := []byte(`{"userPrompt":"{{ (index .steps \"fetch-feed\").output.body }}"}`)
+	err := ValidateJSONTemplates(raw, scope)
+	if err != nil {
+		t.Fatalf("expected indexed step chain in JSON template to validate when steps are allowed, got %v", err)
+	}
+}

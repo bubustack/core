@@ -31,29 +31,28 @@ func WaitForReady(ctx context.Context, conn *grpc.ClientConn) error {
 }
 
 // CallWithTimeout executes fn with a derived context that carries the timeout.
-// The callback must honor the provided context for cancellation to take effect.
+// The callback should honor the provided context so any background work can unwind
+// promptly after timeout or cancellation.
 func CallWithTimeout(ctx context.Context, timeout time.Duration, opName string, fn func(context.Context) error) error {
 	callCtx, cancel := deriveCallContext(ctx, timeout)
 	defer cancel()
 
-	err := fn(callCtx)
-	if err != nil {
-		if timeout > 0 && errors.Is(callCtx.Err(), context.DeadlineExceeded) {
-			return fmt.Errorf("%s timed out after %s: %w", opName, timeout, context.DeadlineExceeded)
-		}
-		return err
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- fn(callCtx)
+	}()
+
+	select {
+	case err := <-errCh:
+		return classifyCallError(callCtx, timeout, opName, err)
+	case <-callCtx.Done():
+		return classifyCallError(callCtx, timeout, opName, callCtx.Err())
 	}
-	if err := callCtx.Err(); err != nil {
-		if timeout > 0 && errors.Is(err, context.DeadlineExceeded) {
-			return fmt.Errorf("%s timed out after %s: %w", opName, timeout, context.DeadlineExceeded)
-		}
-		return err
-	}
-	return nil
 }
 
 // RecvWithTimeout executes fn with a derived context that carries the timeout.
-// The callback must honor the provided context for cancellation to take effect.
+// The callback should honor the provided context so any background work can unwind
+// promptly after timeout or cancellation.
 func RecvWithTimeout[T any](
 	ctx context.Context,
 	timeout time.Duration,
@@ -64,20 +63,25 @@ func RecvWithTimeout[T any](
 	callCtx, cancel := deriveCallContext(ctx, timeout)
 	defer cancel()
 
-	val, err := fn(callCtx)
-	if err != nil {
-		if timeout > 0 && errors.Is(callCtx.Err(), context.DeadlineExceeded) {
-			return zero, fmt.Errorf("%s timed out after %s: %w", opName, timeout, context.DeadlineExceeded)
-		}
-		return zero, err
+	type result struct {
+		val T
+		err error
 	}
-	if err := callCtx.Err(); err != nil {
-		if timeout > 0 && errors.Is(err, context.DeadlineExceeded) {
-			return zero, fmt.Errorf("%s timed out after %s: %w", opName, timeout, context.DeadlineExceeded)
+	resCh := make(chan result, 1)
+	go func() {
+		val, err := fn(callCtx)
+		resCh <- result{val: val, err: err}
+	}()
+
+	select {
+	case res := <-resCh:
+		if err := classifyCallError(callCtx, timeout, opName, res.err); err != nil {
+			return zero, err
 		}
-		return zero, err
+		return res.val, nil
+	case <-callCtx.Done():
+		return zero, classifyCallError(callCtx, timeout, opName, callCtx.Err())
 	}
-	return val, nil
 }
 
 func deriveCallContext(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
@@ -88,4 +92,17 @@ func deriveCallContext(ctx context.Context, timeout time.Duration) (context.Cont
 		return ctx, func() {}
 	}
 	return context.WithTimeout(ctx, timeout)
+}
+
+func classifyCallError(ctx context.Context, timeout time.Duration, opName string, err error) error {
+	if timeout > 0 && errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		return fmt.Errorf("%s timed out after %s: %w", opName, timeout, context.DeadlineExceeded)
+	}
+	if err != nil {
+		return err
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	return nil
 }

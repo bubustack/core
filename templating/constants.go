@@ -20,3 +20,12 @@ const (
 	// RootPacket is the template root for transport packet metadata.
 	RootPacket = "packet"
 )
+
+const (
+	// fnIndex is the Go template built-in used for map/slice indexing.
+	fnIndex = "index"
+	// fnGet is the Sprig helper used for map key lookup.
+	fnGet = "get"
+	// fnDig is the Sprig helper used for nested map traversal.
+	fnDig = "dig"
+)
