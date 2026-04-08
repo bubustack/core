@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/bubustack/core/compare/v0.1.2...v0.1.3) (2026-04-08)
+
+
+### Features
+
+* update golang version ([0b088a9](https://github.com/bubustack/core/commit/0b088a916e5052e129cf11eb8bb5aeef10d5ef97))
+
 ## [0.1.2](https://github.com/bubustack/core/compare/v0.1.1...v0.1.2) (2026-04-06)
 
 
