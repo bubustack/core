@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   go-test:
-    name: Go 1.25.x on Ubuntu
+    name: Go 1.26.x on Ubuntu
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -18,7 +18,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.25.x'
+          go-version: '1.26.x'
           check-latest: true
           cache: true
           cache-dependency-path: go.sum
@@ -36,7 +36,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.25.x'
+          go-version: '1.26.x'
           check-latest: true
           cache: true
           cache-dependency-path: go.sum
@@ -60,7 +60,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.25.x'
+          go-version: '1.26.x'
           check-latest: true
           cache: true
           cache-dependency-path: go.sum
@@ -84,7 +84,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.25.x'
+          go-version: '1.26.x'
           check-latest: true
           cache: true
           cache-dependency-path: go.sum

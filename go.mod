@@ -1,10 +1,10 @@
 module github.com/bubustack/core
 
-go 1.25.1
+go 1.26.2
 
 require (
 	github.com/Masterminds/sprig/v3 v3.3.0
-	github.com/bubustack/tractatus v0.1.1
+	github.com/bubustack/tractatus v0.1.2
 	github.com/go-logr/logr v1.4.3
 	github.com/stretchr/testify v1.11.1
 	google.golang.org/grpc v1.80.0

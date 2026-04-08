@@ -42,7 +42,7 @@ be explicit, well-tested, and easy to review.
 
 ### Prerequisites
 
-- Go 1.25.1 or newer (matching `go.mod`)
+- Go 1.26+ (matching `go.mod`)
 - `make` and bash
 
 ### Setup

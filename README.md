@@ -73,7 +73,7 @@ import (
 
 ### Prerequisites
 
-- Go 1.25.1 or newer (matching `go.mod`)
+- Go 1.26+ (matching `go.mod`)
 - `make`
 
 ### Setup
