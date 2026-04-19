@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/bubustack/core/compare/v0.1.3...v0.1.4) (2026-04-19)
+
+
+### Miscellaneous
+
+* use dedicated release token for release-please ([a31cbf0](https://github.com/bubustack/core/commit/a31cbf03acac5ac44fcfe937a28cc976713f8af0))
+
 ## [0.1.3](https://github.com/bubustack/core/compare/v0.1.2...v0.1.3) (2026-04-08)
 
 
