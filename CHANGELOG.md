@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5](https://github.com/bubustack/core/compare/v0.1.4...v0.1.5) (2026-04-19)
+
+
+### Miscellaneous
+
+* update dependencies ([640f58e](https://github.com/bubustack/core/commit/640f58ecdf4185fe8143366b6b8a85656823ed80))
+
 ## [0.1.4](https://github.com/bubustack/core/compare/v0.1.3...v0.1.4) (2026-04-19)
 
 
