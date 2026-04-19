@@ -1,5 +1,44 @@
 # Changelog
 
+## [0.1.0](https://github.com/bubustack/core/compare/v0.1.5...v0.1.0) (2026-04-19)
+
+
+### Features
+
+* add startup-capabilities protocol, non-blocking call timeouts, and indexed-step chain validation ([0f5ace2](https://github.com/bubustack/core/commit/0f5ace20a355767846d1b9228fb74c622c07ec35))
+* harden core runtime, templating, docs, and release tooling ([7b936a4](https://github.com/bubustack/core/commit/7b936a4edd45f68055b33b7810b91edc759bec7e))
+* update golang version ([0b088a9](https://github.com/bubustack/core/commit/0b088a916e5052e129cf11eb8bb5aeef10d5ef97))
+
+
+### Bug Fixes
+
+* go.sum file inconsistency ([1aca7f2](https://github.com/bubustack/core/commit/1aca7f279c4a432a7ae951589e62949ec9902cbb))
+
+
+### Continuous Integration
+
+* fix workflow syntax and simplify GitHub Actions ([6b581bd](https://github.com/bubustack/core/commit/6b581bdd60649650f6596655a8ada24aa6e71d2e))
+
+
+### Miscellaneous
+
+* **main:** release 0.1.0 ([9add723](https://github.com/bubustack/core/commit/9add723827a931a8dbe632adcd24d88f019681a1))
+* **main:** release 0.1.0 ([91bea66](https://github.com/bubustack/core/commit/91bea66bfb24c13dff2aec333eff0fa829b9497e))
+* **main:** release 0.1.1 ([a948864](https://github.com/bubustack/core/commit/a9488641eb291cf0e849c5e33fb15d9c30633d54))
+* **main:** release 0.1.1 ([023c622](https://github.com/bubustack/core/commit/023c622e2c2166dfcc133be76afc6d6cd99d1c46))
+* **main:** release 0.1.2 ([efddd93](https://github.com/bubustack/core/commit/efddd93ef671a2728c142bccc3f50a8b7e315f29))
+* **main:** release 0.1.2 ([a8508fd](https://github.com/bubustack/core/commit/a8508fd96e095c99c0290ff5d86bae2bea2077d8))
+* **main:** release 0.1.3 ([6ba75d7](https://github.com/bubustack/core/commit/6ba75d754fad868cd74dc6bf54ad0395354f7de2))
+* **main:** release 0.1.3 ([a596575](https://github.com/bubustack/core/commit/a5965753ed003e688e7bba687c72b6aff5b0df24))
+* **main:** release 0.1.4 ([d4a58d4](https://github.com/bubustack/core/commit/d4a58d4fa8a180b783fec4fcfd373dfede936639))
+* **main:** release 0.1.4 ([a717205](https://github.com/bubustack/core/commit/a717205bce05c0e9515326c457340a9626e8fda0))
+* **main:** release 0.1.5 ([86e8c2e](https://github.com/bubustack/core/commit/86e8c2e334d3e9129b11682c5a1ce9136249041e))
+* **main:** release 0.1.5 ([f171ae3](https://github.com/bubustack/core/commit/f171ae3c1591bb40a5145de3302c02ea9fa5100c))
+* update dependencies ([640f58e](https://github.com/bubustack/core/commit/640f58ecdf4185fe8143366b6b8a85656823ed80))
+* use dedicated release token for release-please ([2fa133b](https://github.com/bubustack/core/commit/2fa133b1ca9f3334d7140bc311e98e28339e5fa9))
+* use dedicated release token for release-please ([a31cbf0](https://github.com/bubustack/core/commit/a31cbf03acac5ac44fcfe937a28cc976713f8af0))
+* use tractatus latest version ([1e3dc6d](https://github.com/bubustack/core/commit/1e3dc6db2e356fa100ca7a1858519f07a503e7f3))
+
 ## [0.1.5](https://github.com/bubustack/core/compare/v0.1.4...v0.1.5) (2026-04-19)
 
 
