@@ -34,7 +34,7 @@ and **bubu-sdk-go** (runtime SDK).
 | `runtime/featuretoggles` | Shared telemetry, trace propagation, logging, and metrics toggle wiring. |
 | `runtime/identity` | StoryRun-safe label and service-account naming helpers. |
 | `runtime/naming` | DNS-safe resource name composition helpers. |
-| `runtime/operatorconfig` | Shared ConfigMap-backed operator config manager for controller-runtime consumers. |
+| `runtime/operatorconfig` | Shared ConfigMap-backed operator config manager with a Kubernetes-only reader/reconcile contract. |
 | `runtime/stage` | Structured StoryRun/step metadata helpers for logs and related shared metadata flow. |
 | `runtime/storage` | Storage provider env, secret, timeout, and volume wiring helpers. |
 | `runtime/transport` | Binding envelopes, protocol checks, and shared transport env helpers. |

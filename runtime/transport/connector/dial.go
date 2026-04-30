@@ -33,6 +33,10 @@ func WaitForReady(ctx context.Context, conn *grpc.ClientConn) error {
 // CallWithTimeout executes fn with a derived context that carries the timeout.
 // The callback should honor the provided context so any background work can unwind
 // promptly after timeout or cancellation.
+//
+// If fn ignores context cancellation, the goroutine running fn remains alive
+// until fn returns. Callers must ensure fn observes callCtx.Done() to avoid
+// goroutine accumulation during sustained timeout or cancellation storms.
 func CallWithTimeout(ctx context.Context, timeout time.Duration, opName string, fn func(context.Context) error) error {
 	callCtx, cancel := deriveCallContext(ctx, timeout)
 	defer cancel()
@@ -53,6 +57,10 @@ func CallWithTimeout(ctx context.Context, timeout time.Duration, opName string, 
 // RecvWithTimeout executes fn with a derived context that carries the timeout.
 // The callback should honor the provided context so any background work can unwind
 // promptly after timeout or cancellation.
+//
+// If fn ignores context cancellation, the goroutine running fn remains alive
+// until fn returns. Callers must ensure fn observes callCtx.Done() to avoid
+// goroutine accumulation during sustained timeout or cancellation storms.
 func RecvWithTimeout[T any](
 	ctx context.Context,
 	timeout time.Duration,

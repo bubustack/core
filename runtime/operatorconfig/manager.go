@@ -10,13 +10,8 @@ import (
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/event"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 // ReloadReason identifies why the configuration was reloaded.
@@ -29,9 +24,30 @@ const (
 	ReloadReasonReconcile ReloadReason = "reconcile"
 )
 
+// ConfigMapReader is the minimal read contract needed by Manager.
+type ConfigMapReader interface {
+	Get(ctx context.Context, key types.NamespacedName, into *corev1.ConfigMap) error
+}
+
+// ConfigMapReaderFunc adapts a function to ConfigMapReader.
+type ConfigMapReaderFunc func(context.Context, types.NamespacedName, *corev1.ConfigMap) error
+
+// Get implements ConfigMapReader.
+func (f ConfigMapReaderFunc) Get(ctx context.Context, key types.NamespacedName, into *corev1.ConfigMap) error {
+	return f(ctx, key, into)
+}
+
+// Request identifies a reconcile target.
+type Request struct {
+	NamespacedName types.NamespacedName
+}
+
+// Result is reserved for future reconcile scheduling metadata.
+type Result struct{}
+
 // Options configures a Manager instance for a concrete operator config type.
 type Options[T any] struct {
-	Client          client.Client
+	Client          ConfigMapReader
 	Logger          logr.Logger
 	ConfigMapKey    types.NamespacedName
 	ControllerName  string
@@ -46,7 +62,7 @@ type Options[T any] struct {
 // for operator configuration structs.
 type Manager[T any] struct {
 	opts          Options[T]
-	apiReader     client.Reader
+	apiReader     ConfigMapReader
 	currentConfig *T
 	defaultConfig *T
 	lastSync      time.Time
@@ -66,9 +82,6 @@ func NewManager[T any](opts Options[T]) (*Manager[T], error) {
 	}
 	if opts.CloneConfig == nil {
 		return nil, fmt.Errorf("operatorconfig: CloneConfig must be provided")
-	}
-	if opts.Logger.GetSink() == nil {
-		opts.Logger = log.Log.WithName("operator-config-manager")
 	}
 	if opts.ControllerName == "" {
 		opts.ControllerName = "operator-config-manager"
@@ -93,7 +106,7 @@ func NewManager[T any](opts Options[T]) (*Manager[T], error) {
 }
 
 // SetAPIReader injects a non-cached reader for startup scenarios.
-func (m *Manager[T]) SetAPIReader(reader client.Reader) {
+func (m *Manager[T]) SetAPIReader(reader ConfigMapReader) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.apiReader = reader
@@ -128,20 +141,10 @@ func (m *Manager[T]) LoadInitial(ctx context.Context) error {
 	return nil
 }
 
-// SetupWithManager wires the manager into controller-runtime so ConfigMap
-// changes trigger reconciles.
-func (m *Manager[T]) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		Named(m.opts.ControllerName).
-		For(&corev1.ConfigMap{}).
-		WithEventFilter(m.configMapPredicate()).
-		Complete(m)
-}
-
 // Reconcile reacts to ConfigMap updates/deletes and refreshes the cache.
-func (m *Manager[T]) Reconcile(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
+func (m *Manager[T]) Reconcile(ctx context.Context, req Request) (Result, error) {
 	if req.NamespacedName != m.opts.ConfigMapKey {
-		return reconcile.Result{}, nil
+		return Result{}, nil
 	}
 
 	cfg, err := m.loadAndParse(ctx)
@@ -152,17 +155,17 @@ func (m *Manager[T]) Reconcile(ctx context.Context, req reconcile.Request) (reco
 			if changed {
 				m.applyAndNotify(ReloadReasonReconcile, snapshot)
 			}
-			return reconcile.Result{}, nil
+			return Result{}, nil
 		}
 		m.opts.Logger.Error(err, "failed to refresh operator configuration")
-		return reconcile.Result{}, err
+		return Result{}, err
 	}
 
 	snapshot, changed := m.storeConfigIfChanged(cfg)
 	if changed {
 		m.applyAndNotify(ReloadReasonReconcile, snapshot)
 	}
-	return reconcile.Result{}, nil
+	return Result{}, nil
 }
 
 func (m *Manager[T]) loadAndParse(ctx context.Context) (*T, error) {
@@ -186,7 +189,7 @@ func (m *Manager[T]) loadAndParse(ctx context.Context) (*T, error) {
 	return cfg, nil
 }
 
-func (m *Manager[T]) reader() client.Reader {
+func (m *Manager[T]) reader() ConfigMapReader {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	if m.apiReader != nil {
@@ -225,30 +228,10 @@ func (m *Manager[T]) applyAndNotify(reason ReloadReason, cfg *T) {
 	}
 }
 
-func (m *Manager[T]) configMapPredicate() predicate.Predicate {
-	return predicate.Funcs{
-		CreateFunc: func(e event.CreateEvent) bool {
-			if e.Object == nil {
-				return false
-			}
-			return namespacedName(e.Object.GetNamespace(), e.Object.GetName()) == m.opts.ConfigMapKey
-		},
-		UpdateFunc: func(e event.UpdateEvent) bool {
-			if e.ObjectNew == nil {
-				return false
-			}
-			return namespacedName(e.ObjectNew.GetNamespace(), e.ObjectNew.GetName()) == m.opts.ConfigMapKey
-		},
-		DeleteFunc: func(e event.DeleteEvent) bool {
-			if e.Object == nil {
-				return false
-			}
-			return namespacedName(e.Object.GetNamespace(), e.Object.GetName()) == m.opts.ConfigMapKey
-		},
-		GenericFunc: func(event.GenericEvent) bool { return false },
+// MatchesConfigMap reports whether the object is the configured ConfigMap.
+func (m *Manager[T]) MatchesConfigMap(obj metav1.Object) bool {
+	if obj == nil {
+		return false
 	}
-}
-
-func namespacedName(ns, name string) types.NamespacedName {
-	return types.NamespacedName{Namespace: ns, Name: name}
+	return types.NamespacedName{Namespace: obj.GetNamespace(), Name: obj.GetName()} == m.opts.ConfigMapKey
 }
