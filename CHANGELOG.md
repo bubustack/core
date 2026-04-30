@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.6](https://github.com/bubustack/core/compare/v0.1.5...v0.1.6) (2026-04-30)
+
+
+### Features
+
+* update core dependencies and operator config boundary ([2791a99](https://github.com/bubustack/core/commit/2791a997557221bedbf470d11ec826b15377ca89))
+* update core dependencies and operator config boundary ([4e0b054](https://github.com/bubustack/core/commit/4e0b0544fcdec233b750b95b2f65e46adb7b654a))
+
 ## [0.1.5](https://github.com/bubustack/core/compare/v0.1.4...v0.1.5) (2026-04-19)
 
 
