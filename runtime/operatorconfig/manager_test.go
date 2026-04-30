@@ -5,12 +5,10 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"sigs.k8s.io/controller-runtime/pkg/event"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 type sampleConfig struct {
@@ -44,12 +42,39 @@ func parseSampleConfig(cm *corev1.ConfigMap) (*sampleConfig, error) {
 	return &sampleConfig{Value: val}, nil
 }
 
-func TestManagerLoadInitial(t *testing.T) {
-	scheme := runtime.NewScheme()
-	if err := corev1.AddToScheme(scheme); err != nil {
-		t.Fatalf("failed to add corev1 scheme: %v", err)
-	}
+type memoryConfigMapReader struct {
+	items map[types.NamespacedName]*corev1.ConfigMap
+}
 
+func newMemoryConfigMapReader(items ...*corev1.ConfigMap) *memoryConfigMapReader {
+	reader := &memoryConfigMapReader{items: make(map[types.NamespacedName]*corev1.ConfigMap, len(items))}
+	for _, item := range items {
+		reader.put(item)
+	}
+	return reader
+}
+
+func (r *memoryConfigMapReader) Get(_ context.Context, key types.NamespacedName, into *corev1.ConfigMap) error {
+	item := r.items[key]
+	if item == nil {
+		return apierrors.NewNotFound(schema.GroupResource{Resource: "configmaps"}, key.Name)
+	}
+	item.DeepCopyInto(into)
+	return nil
+}
+
+func (r *memoryConfigMapReader) delete(item *corev1.ConfigMap) {
+	delete(r.items, types.NamespacedName{Name: item.Name, Namespace: item.Namespace})
+}
+
+func (r *memoryConfigMapReader) put(item *corev1.ConfigMap) {
+	if item == nil {
+		return
+	}
+	r.items[types.NamespacedName{Name: item.Name, Namespace: item.Namespace}] = item.DeepCopy()
+}
+
+func TestManagerLoadInitial(t *testing.T) {
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      operatorConfigName,
@@ -58,7 +83,7 @@ func TestManagerLoadInitial(t *testing.T) {
 		Data: map[string]string{"value": liveConfigValue},
 	}
 
-	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(cm).Build()
+	client := newMemoryConfigMapReader(cm)
 
 	applied := false
 	manager, err := NewManager[sampleConfig](Options[sampleConfig]{
@@ -102,11 +127,6 @@ func TestNewManagerReturnsValidationErrors(t *testing.T) {
 }
 
 func TestManagerCallbacksAndCurrentConfigReceiveClones(t *testing.T) {
-	scheme := runtime.NewScheme()
-	if err := corev1.AddToScheme(scheme); err != nil {
-		t.Fatalf("failed to add corev1 scheme: %v", err)
-	}
-
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      operatorConfigName,
@@ -115,7 +135,7 @@ func TestManagerCallbacksAndCurrentConfigReceiveClones(t *testing.T) {
 		Data: map[string]string{"value": liveConfigValue},
 	}
 
-	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(cm).Build()
+	client := newMemoryConfigMapReader(cm)
 
 	manager, err := NewManager[sampleConfig](Options[sampleConfig]{
 		Client:        client,
@@ -152,11 +172,6 @@ func TestManagerCallbacksAndCurrentConfigReceiveClones(t *testing.T) {
 }
 
 func TestManagerReconcileSkipsUnchangedConfig(t *testing.T) {
-	scheme := runtime.NewScheme()
-	if err := corev1.AddToScheme(scheme); err != nil {
-		t.Fatalf("failed to add corev1 scheme: %v", err)
-	}
-
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      operatorConfigName,
@@ -165,7 +180,7 @@ func TestManagerReconcileSkipsUnchangedConfig(t *testing.T) {
 		Data: map[string]string{"value": liveConfigValue},
 	}
 
-	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(cm).Build()
+	client := newMemoryConfigMapReader(cm)
 
 	applied := 0
 	manager, err := NewManager[sampleConfig](Options[sampleConfig]{
@@ -191,7 +206,7 @@ func TestManagerReconcileSkipsUnchangedConfig(t *testing.T) {
 		t.Fatalf("expected first apply during LoadInitial, got %d", applied)
 	}
 
-	if _, err := manager.Reconcile(context.Background(), reconcile.Request{
+	if _, err := manager.Reconcile(context.Background(), Request{
 		NamespacedName: types.NamespacedName{Name: operatorConfigName, Namespace: defaultNamespace},
 	}); err != nil {
 		t.Fatalf("Reconcile failed: %v", err)
@@ -201,30 +216,18 @@ func TestManagerReconcileSkipsUnchangedConfig(t *testing.T) {
 	}
 }
 
-func TestConfigMapPredicateHandlesNilEvents(t *testing.T) {
+func TestMatchesConfigMapHandlesNilObject(t *testing.T) {
 	manager := &Manager[sampleConfig]{
 		opts: Options[sampleConfig]{
 			ConfigMapKey: types.NamespacedName{Name: operatorConfigName, Namespace: defaultNamespace},
 		},
 	}
-	pred := manager.configMapPredicate()
-	if pred.Create(event.CreateEvent{}) {
-		t.Fatalf("expected nil create event to be ignored")
-	}
-	if pred.Update(event.UpdateEvent{}) {
-		t.Fatalf("expected nil update event to be ignored")
-	}
-	if pred.Delete(event.DeleteEvent{}) {
-		t.Fatalf("expected nil delete event to be ignored")
+	if manager.MatchesConfigMap(nil) {
+		t.Fatalf("expected nil object to be ignored")
 	}
 }
 
 func TestManagerReconcileNotFoundResetsToDefault(t *testing.T) {
-	scheme := runtime.NewScheme()
-	if err := corev1.AddToScheme(scheme); err != nil {
-		t.Fatalf("failed to add corev1 scheme: %v", err)
-	}
-
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      operatorConfigName,
@@ -233,7 +236,7 @@ func TestManagerReconcileNotFoundResetsToDefault(t *testing.T) {
 		Data: map[string]string{"value": liveConfigValue},
 	}
 
-	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(cm).Build()
+	client := newMemoryConfigMapReader(cm)
 
 	applied := 0
 	manager, err := NewManager[sampleConfig](Options[sampleConfig]{
@@ -255,11 +258,9 @@ func TestManagerReconcileNotFoundResetsToDefault(t *testing.T) {
 	if err := manager.LoadInitial(context.Background()); err != nil {
 		t.Fatalf("LoadInitial failed: %v", err)
 	}
-	if err := client.Delete(context.Background(), cm); err != nil {
-		t.Fatalf("delete configmap: %v", err)
-	}
+	client.delete(cm)
 
-	if _, err := manager.Reconcile(context.Background(), reconcile.Request{
+	if _, err := manager.Reconcile(context.Background(), Request{
 		NamespacedName: types.NamespacedName{Name: operatorConfigName, Namespace: defaultNamespace},
 	}); err != nil {
 		t.Fatalf("Reconcile failed: %v", err)

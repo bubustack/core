@@ -21,6 +21,8 @@ var safeSprigFunctionNames = []string{
 	"fromJson", "toJson", "toPrettyJson", "toRawJson", "mustFromJson", "mustToJson", "mustToPrettyJson", "mustToRawJson",
 	"ternary",
 	"typeOf", "typeIs", "typeIsLike", "kindOf", "kindIs", "deepEqual",
+	// Path helpers are string-only transforms. They do not read the filesystem
+	// or environment, so they stay available for portable key/path shaping.
 	"base", "dir", "clean", "ext", "isAbs", "osBase", "osClean", "osDir", "osExt", "osIsAbs",
 	"b64enc", "b64dec", "b32enc", "b32dec",
 	"tuple", "list", "dict", "get", "hasKey", "pluck", "keys", "pick", "omit", "values",

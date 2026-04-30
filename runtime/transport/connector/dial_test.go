@@ -98,17 +98,23 @@ func TestCallWithTimeoutPropagatesParentCancellation(t *testing.T) {
 func TestCallWithTimeoutPropagatesParentCancellationWhenCallbackIgnoresContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	release := make(chan struct{})
+	started := make(chan struct{})
 	defer close(release)
 
 	done := make(chan error, 1)
 	go func() {
 		done <- CallWithTimeout(ctx, time.Second, "call", func(context.Context) error {
+			close(started)
 			<-release
 			return nil
 		})
 	}()
 
-	time.Sleep(10 * time.Millisecond)
+	select {
+	case <-started:
+	case <-time.After(200 * time.Millisecond):
+		t.Fatal("expected callback to start")
+	}
 	cancel()
 
 	select {
